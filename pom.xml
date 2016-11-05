@@ -10,7 +10,7 @@
 
     <groupId>com.coravy.hudson.plugins.github</groupId>
     <artifactId>github</artifactId>
-    <version>1.22.4</version>
+    <version>1.22.4.webhookfix</version>
     <packaging>hpi</packaging>
 
     <name>GitHub plugin</name>
@@ -62,7 +62,7 @@
             <url>https://repo.jenkins-ci.org/public/</url>
         </repository>
     </repositories>
-    
+
     <pluginRepositories>
         <pluginRepository>
             <id>repo.jenkins-ci.org</id>
