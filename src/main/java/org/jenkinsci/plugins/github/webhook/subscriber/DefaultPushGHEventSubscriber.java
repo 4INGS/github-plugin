@@ -93,35 +93,7 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
                             LOGGER.debug("Considering to poke {}", fullDisplayName);
                             if (GitHubRepositoryNameContributor.parseAssociatedNames(job)
                                     .contains(changedRepository)) {
-                                Set ignoredUsers = new java.util.HashSet();
-                                boolean eligibleBranch = false;
-
-                                if (job instanceof hudson.model.Project) {
-                                    hudson.scm.SCM scm = ((hudson.model.Project) job).getScm();
-                                    if (scm instanceof hudson.plugins.git.GitSCM) {
-                                        hudson.plugins.git.extensions.impl.UserExclusion userExclusions =
-                                            ((hudson.plugins.git.GitSCM) scm)
-                                                .getExtensions()
-                                                .get(hudson.plugins.git.extensions.impl.UserExclusion.class);
-                                        if (userExclusions != null) {
-                                            ignoredUsers = userExclusions.getExcludedUsersNormalized();
-                                        }
-
-                                        java.util.List<hudson.plugins.git.BranchSpec> branches =
-                                                ((hudson.plugins.git.GitSCM) scm).getBranches();
-                                        LOGGER.info("branches: {}", branches);
-                                        for (hudson.plugins.git.BranchSpec branch : branches) {
-                                            if (pusherBranch.equals(branch.getName())) {
-                                                eligibleBranch = true;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                LOGGER.info("ignoredUsers: {}", ignoredUsers);
-                                LOGGER.info("eligibleBranch: {}", eligibleBranch);
-
-                                if (!ignoredUsers.contains(pusherName) && eligibleBranch) {
+                                if (isEligibleTrigger(job, pusherBranch, pusherName)) {
                                     LOGGER.info("Poked {}", fullDisplayName);
                                     trigger.onPost(GitHubTriggerEvent.create()
                                             .withTimestamp(event.getTimestamp())
@@ -148,35 +120,36 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
         }
     }
 
-    // private boolean isEligibleTrigger(Item job, String pusherBranch) {
-    //     Set ignoredUsers = new java.util.HashSet();
-    //     boolean eligibleBranch = false;
+    private boolean isEligibleTrigger(
+            Item job, String pusherBranch, String pusherName) {
+        Set ignoredUsers = new java.util.HashSet();
+        boolean eligibleBranch = false;
 
-    //     if (job instanceof hudson.model.Project) {
-    //         hudson.scm.SCM scm = ((hudson.model.Project) job).getScm();
-    //         if (scm instanceof hudson.plugins.git.GitSCM) {
-    //             hudson.plugins.git.extensions.impl.UserExclusion userExclusions =
-    //                 ((hudson.plugins.git.GitSCM) scm)
-    //                     .getExtensions()
-    //                     .get(hudson.plugins.git.extensions.impl.UserExclusion.class);
-    //             if (userExclusions != null) {
-    //                 ignoredUsers = userExclusions.getExcludedUsersNormalized();
-    //             }
+        if (job instanceof hudson.model.Project) {
+            hudson.scm.SCM scm = ((hudson.model.Project) job).getScm();
+            if (scm instanceof hudson.plugins.git.GitSCM) {
+                hudson.plugins.git.extensions.impl.UserExclusion userExclusions =
+                    ((hudson.plugins.git.GitSCM) scm)
+                        .getExtensions()
+                        .get(hudson.plugins.git.extensions.impl.UserExclusion.class);
+                if (userExclusions != null) {
+                    ignoredUsers = userExclusions.getExcludedUsersNormalized();
+                }
 
-    //             java.util.List<hudson.plugins.git.BranchSpec> branches =
-    //                     ((hudson.plugins.git.GitSCM) scm).getBranches();
-    //             LOGGER.info("branches: {}", branches);
-    //             for (hudson.plugins.git.BranchSpec branch : branches) {
-    //                 if (pusherBranch.equals(branch.getName())) {
-    //                     eligibleBranch = true;
-    //                 }
-    //             }
-    //         }
-    //     }
+                java.util.List<hudson.plugins.git.BranchSpec> branches =
+                        ((hudson.plugins.git.GitSCM) scm).getBranches();
+                LOGGER.info("branches: {}", branches);
+                for (hudson.plugins.git.BranchSpec branch : branches) {
+                    if (pusherBranch.equals(branch.getName())) {
+                        eligibleBranch = true;
+                    }
+                }
+            }
+        }
 
-    //     LOGGER.info("ignoredUsers: {}", ignoredUsers);
-    //     LOGGER.info("eligibleBranch: {}", eligibleBranch);
+        LOGGER.info("ignoredUsers: {}", ignoredUsers);
+        LOGGER.info("eligibleBranch: {}", eligibleBranch);
 
-    //     return (!ignoredUsers.contains(pusherName) && eligibleBranch)
-    // }
+        return (!ignoredUsers.contains(pusherName) && eligibleBranch);
+    }
 }
