@@ -75,6 +75,7 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
         }
         URL repoUrl = push.getRepository().getUrl();
         final String pusherName = push.getPusher().getName();
+        final String pusherBranch = push.getRef();
         LOGGER.info("Received PushEvent for {} from {}", repoUrl, event.getOrigin());
         final GitHubRepositoryName changedRepository = GitHubRepositoryName.create(repoUrl.toExternalForm());
 
@@ -92,13 +93,15 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
                             LOGGER.debug("Considering to poke {}", fullDisplayName);
                             if (GitHubRepositoryNameContributor.parseAssociatedNames(job)
                                     .contains(changedRepository)) {
-                                LOGGER.info("Poked {}", fullDisplayName);
-                                trigger.onPost(GitHubTriggerEvent.create()
-                                        .withTimestamp(event.getTimestamp())
-                                        .withOrigin(event.getOrigin())
-                                        .withTriggeredByUser(pusherName)
-                                        .build()
-                                );
+                                if (isEligibleTrigger(job, pusherBranch, pusherName)) {
+                                    LOGGER.info("Poked {}", fullDisplayName);
+                                    trigger.onPost(GitHubTriggerEvent.create()
+                                            .withTimestamp(event.getTimestamp())
+                                            .withOrigin(event.getOrigin())
+                                            .withTriggeredByUser(pusherName)
+                                            .build()
+                                    );
+                                }
                             } else {
                                 LOGGER.debug("Skipped {} because it doesn't have a matching repository.",
                                         fullDisplayName);
@@ -115,5 +118,38 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
         } else {
             LOGGER.warn("Malformed repo url {}", repoUrl);
         }
+    }
+
+    private boolean isEligibleTrigger(
+            Item job, String pusherBranch, String pusherName) {
+        Set ignoredUsers = new java.util.HashSet();
+        boolean eligibleBranch = false;
+
+        if (job instanceof hudson.model.Project) {
+            hudson.scm.SCM scm = ((hudson.model.Project) job).getScm();
+            if (scm instanceof hudson.plugins.git.GitSCM) {
+                hudson.plugins.git.extensions.impl.UserExclusion userExclusions =
+                    ((hudson.plugins.git.GitSCM) scm)
+                        .getExtensions()
+                        .get(hudson.plugins.git.extensions.impl.UserExclusion.class);
+                if (userExclusions != null) {
+                    ignoredUsers = userExclusions.getExcludedUsersNormalized();
+                }
+
+                java.util.List<hudson.plugins.git.BranchSpec> branches =
+                        ((hudson.plugins.git.GitSCM) scm).getBranches();
+                LOGGER.info("branches: {}", branches);
+                for (hudson.plugins.git.BranchSpec branch : branches) {
+                    if (pusherBranch.equals(branch.getName())) {
+                        eligibleBranch = true;
+                    }
+                }
+            }
+        }
+
+        LOGGER.info("ignoredUsers: {}", ignoredUsers);
+        LOGGER.info("eligibleBranch: {}", eligibleBranch);
+
+        return (!ignoredUsers.contains(pusherName) && eligibleBranch);
     }
 }
