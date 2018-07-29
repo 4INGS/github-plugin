@@ -145,14 +145,12 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
                     }
                 }
             }
-        }
-
-        // This needs to be able to process Pipeline jobs as well as Freestyle jobs.
-        // The above block (hudson.model.Project) doesn't grab Pipeline jobs.
-        // Since we can't (yet) easily grab the scm(s) from a Pipeline job, just
-        // assume it will be handled correctly (for now).
-        // We just need to keep an eye on this in case this causes any unexpected fallout.
-        if (job instanceof org.jenkinsci.plugins.workflow.job.WorkflowJob) {
+        } else if (job instanceof hudson.model.Job) {
+            // This needs to be able to process Pipeline jobs as well as Freestyle jobs.
+            // The above block (hudson.model.Project) doesn't grab Pipeline jobs.
+            // Since we can't (yet) easily grab the scm(s) from a Pipeline job, just
+            // assume it will be handled correctly (for now).
+            // We just need to keep an eye on this in case this causes any unexpected fallout.
             eligibleBranch = true;
         }
 
