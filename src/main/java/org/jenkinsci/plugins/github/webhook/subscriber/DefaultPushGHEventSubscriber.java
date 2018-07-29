@@ -125,10 +125,7 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
         Set ignoredUsers = new java.util.HashSet();
         boolean eligibleBranch = false;
 
-        // This needs to be able to process Pipeline jobs as well as Freestyle jobs.
-        // hudson.model.Project doesn't grab Pipeline jobs. hudson.model.Job will get both.
-        // We just need to keep an eye on this in case this causes any unexpected fallout.
-        if (job instanceof hudson.model.Job) {
+        if (job instanceof hudson.model.Project) {
             hudson.scm.SCM scm = ((hudson.model.Project) job).getScm();
             if (scm instanceof hudson.plugins.git.GitSCM) {
                 hudson.plugins.git.extensions.impl.UserExclusion userExclusions =
@@ -148,6 +145,15 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
                     }
                 }
             }
+        }
+
+        // This needs to be able to process Pipeline jobs as well as Freestyle jobs.
+        // The above block (hudson.model.Project) doesn't grab Pipeline jobs.
+        // Since we can't (yet) easily grab the scm(s) from a Pipeline job, just
+        // assume it will be handled correctly (for now).
+        // We just need to keep an eye on this in case this causes any unexpected fallout.
+        if (job instanceof org.jenkinsci.plugins.workflow.job.WorkflowJob) {
+            eligibleBranch = true
         }
 
         LOGGER.info("ignoredUsers: {}", ignoredUsers);
