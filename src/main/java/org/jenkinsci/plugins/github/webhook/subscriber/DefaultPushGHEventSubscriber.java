@@ -153,7 +153,7 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
         // assume it will be handled correctly (for now).
         // We just need to keep an eye on this in case this causes any unexpected fallout.
         if (job instanceof org.jenkinsci.plugins.workflow.job.WorkflowJob) {
-            eligibleBranch = true
+            eligibleBranch = true;
         }
 
         LOGGER.info("ignoredUsers: {}", ignoredUsers);
