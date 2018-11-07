@@ -125,10 +125,12 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
         Set ignoredUsers = new java.util.HashSet();
         boolean eligibleBranch = false;
 
-        // This needs to be able to process Pipeline jobs as well as Freestyle jobs.
-        // hudson.model.Project doesn't grab Pipeline jobs. hudson.model.Job will get both.
-        // We just need to keep an eye on this in case this causes any unexpected fallout.
-        if (job instanceof hudson.model.Job) {
+        // Handle dealing with userExcludes and specified branches on Freestyle jobs. Let
+        // the rest through (i.e. eligibleBranch = true). This should let github-plugin
+        // handle Freestyle jobs in the way that we currently need, but let it handle
+        // everything else how those jobs should be handled.
+        if (job instanceof hudson.model.FreeStyleProject) {
+            LOGGER.debug("Job is instanceof hudson.model.FreeStyleProject");
             hudson.scm.SCM scm = ((hudson.model.Project) job).getScm();
             if (scm instanceof hudson.plugins.git.GitSCM) {
                 hudson.plugins.git.extensions.impl.UserExclusion userExclusions =
@@ -147,10 +149,14 @@ public class DefaultPushGHEventSubscriber extends GHEventsSubscriber {
                         eligibleBranch = true;
                     }
                 }
+
+                LOGGER.info("ignoredUsers: {}", ignoredUsers);
             }
+        } else {
+            LOGGER.debug("Job is NOT instanceof hudson.model.FreeStyleProject");
+            eligibleBranch = true;
         }
 
-        LOGGER.info("ignoredUsers: {}", ignoredUsers);
         LOGGER.info("eligibleBranch: {}", eligibleBranch);
 
         return (!ignoredUsers.contains(pusherName) && eligibleBranch);

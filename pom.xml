@@ -11,7 +11,7 @@
 
     <groupId>com.coravy.hudson.plugins.github</groupId>
     <artifactId>github</artifactId>
-    <version>1.29.3.webhookfix</version>
+    <version>1.29.3.webhookfix2</version>
     <packaging>hpi</packaging>
 
     <name>GitHub plugin</name>
